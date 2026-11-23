@@ -1,0 +1,8 @@
+{
+  "name": "VARKON: BATTLEFIELD LEGENDS",
+  "description": "Tactical 3D Battle Royale shooter with PBR graphics, interactive 3D lobby, customizable weapons and operators, vehicles, dynamic weather, and shrinking safe zones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
