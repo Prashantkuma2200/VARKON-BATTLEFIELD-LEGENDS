@@ -421,6 +421,7 @@ export default function App() {
           }
           onInviteFriend={handleInviteFriend}
           onClaimDailyReward={handleClaimDailyReward}
+          onClaimMission={handleClaimMission}
           onPlay={launchMatch}
         />
       )}

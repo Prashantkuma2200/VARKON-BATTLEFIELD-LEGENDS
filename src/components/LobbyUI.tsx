@@ -10,7 +10,6 @@ import {
   Settings,
   Shield,
   ShoppingBag,
-  Sparkles,
   Swords,
   Users,
   Volume2,
@@ -21,6 +20,7 @@ import {
   ChevronRight,
   UserPlus,
 } from 'lucide-react';
+import { DailyMissionsSidebar } from './DailyMissionsSidebar';
 import { FRIENDS_LIST, getMapById, getOperatorById, getRankInfo, getWeaponById, MAPS } from '../game/data';
 import {
   AudioSettings,
@@ -54,6 +54,7 @@ interface LobbyUIProps {
   onUpdateWeatherTime: (weather: WeatherType, tod: TimeOfDay) => void;
   onInviteFriend: (friendId: string) => void;
   onClaimDailyReward: () => void;
+  onClaimMission: (missionId: string) => void;
   onPlay: () => void;
 }
 
@@ -83,6 +84,7 @@ export const LobbyUI: React.FC<LobbyUIProps> = ({
   onUpdateWeatherTime,
   onInviteFriend,
   onClaimDailyReward,
+  onClaimMission,
   onPlay,
 }) => {
   const [modeDrawerOpen, setModeDrawerOpen] = useState(false);
@@ -258,10 +260,10 @@ export const LobbyUI: React.FC<LobbyUIProps> = ({
       </header>
 
       {/* MIDDLE ROW: Compact Perimeter Navigation Only (Center 70% completely unobstructed for 3D Operator!) */}
-      <div className="flex-1 flex items-center justify-between my-3">
-        {/* Left: Compact Squad Invites & Equipped Loadout Readout */}
-        <div className="hidden md:flex flex-col gap-3 w-56 pointer-events-auto">
-          <div className="bg-[#0F1218]/86 border border-[#C8D0DC]/12 p-3">
+      <div className="flex-1 flex items-center justify-between my-3 min-h-0">
+        {/* Left: Operator Summary, Collapsible Active Daily Missions Sidebar & Squad Invites */}
+        <div className="flex flex-col gap-2.5 max-h-[calc(100vh-195px)] overflow-y-auto pr-0.5 pointer-events-auto">
+          <div className="hidden md:block w-64 bg-[#0F1218]/86 border border-[#C8D0DC]/12 p-3">
             <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-2">
               <span className="font-display font-semibold tracking-wider text-[#CBD5E1]">ACTIVE OPERATOR</span>
               <button
@@ -292,8 +294,15 @@ export const LobbyUI: React.FC<LobbyUIProps> = ({
             </div>
           </div>
 
+          {/* Collapsible Active Daily Missions Sidebar */}
+          <DailyMissionsSidebar
+            missions={profile.missions}
+            onClaimMission={onClaimMission}
+            onOpenAllMissions={() => onOpenModal('missions')}
+          />
+
           {/* Friends Online / Squad Invite quick box */}
-          <div className="bg-[#0F1218]/86 border border-[#C8D0DC]/12 p-3">
+          <div className="hidden lg:block w-64 bg-[#0F1218]/86 border border-[#C8D0DC]/12 p-3">
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-display font-semibold tracking-wider text-[#CBD5E1]">SQUAD ONLINE</span>
               <span className="font-mono-num text-[#94A3B8]">
