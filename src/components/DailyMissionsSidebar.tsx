@@ -49,7 +49,7 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
   return (
     <aside
       aria-label="Active Daily Missions"
-      className={`pointer-events-auto bg-[#0F1218]/90 border border-[#C8D0DC]/15 clip-tactical-sm transition-all duration-200 ${
+      className={`pointer-events-auto bg-[#121712]/92 border border-[#C6A65A]/28 clip-tactical-sm transition-all duration-200 ${
         isOpen ? 'w-64' : 'w-56 md:w-64'
       }`}
     >
@@ -62,12 +62,12 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
           audioEngine.playUiClick();
           setIsOpen((prev) => !prev);
         }}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-white/[0.03] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors cursor-pointer"
         title={isOpen ? 'Collapse Active Daily Missions' : 'Expand Active Daily Missions'}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <Target className="w-3.5 h-3.5 text-[#EF4444] shrink-0" />
-          <span className="font-display font-bold text-xs tracking-wider text-white uppercase truncate">
+          <Target className="w-3.5 h-3.5 text-[#C6A65A] shrink-0" />
+          <span className="font-display font-bold text-xs tracking-wider text-[#F2F2ED] uppercase truncate">
             Active Daily Missions
           </span>
         </div>
@@ -75,13 +75,13 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           {readyToClaimCount > 0 && (
             <span
-              className="px-1.5 py-0.5 bg-[#DC2626] text-white font-mono-num text-[10px] font-bold leading-none"
+              className="px-1.5 py-0.5 bg-[#B83232] text-white font-mono-num text-[10px] font-bold leading-none"
               title={`${readyToClaimCount} reward${readyToClaimCount > 1 ? 's' : ''} ready to claim`}
             >
               {readyToClaimCount}
             </span>
           )}
-          <span className="font-mono-num text-[11px] text-[#94A3B8]">
+          <span className="font-mono-num text-[11px] text-[#C6A65A]">
             {completedCount}/{dailyMissions.length}
           </span>
           {isOpen ? (
@@ -93,17 +93,17 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
       </button>
 
       {/* Overall Daily Completion Progress Hairline */}
-      <div className="h-[2px] w-full bg-[#1C212A] overflow-hidden">
+      <div className="h-[2px] w-full bg-[#1E261C] overflow-hidden">
         <div
           className="h-full transition-all duration-300"
           style={{
             width: `${overallPct}%`,
             backgroundColor:
               readyToClaimCount > 0
-                ? '#F59E0B'
+                ? '#C6A65A'
                 : completedCount === dailyMissions.length && dailyMissions.length > 0
-                ? '#10B981'
-                : '#DC2626',
+                ? '#22C55E'
+                : '#B83232',
           }}
         />
       </div>
@@ -135,16 +135,16 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
                     key={mission.id}
                     className={`p-2 border transition-colors ${
                       mission.claimed
-                        ? 'bg-[#0C1110]/70 border-[#10B981]/25'
+                        ? 'bg-[#0F1610]/80 border-[#22C55E]/25'
                         : isReady
-                        ? 'bg-[#1D1514]/85 border-[#F59E0B]/50'
-                        : 'bg-[#141821]/85 border-white/8'
+                        ? 'bg-[#262417]/90 border-[#C6A65A]/60'
+                        : 'bg-[#182017]/90 border-white/10'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span
                         className={`text-[11px] font-medium leading-snug ${
-                          mission.claimed ? 'text-[#94A3B8] line-through' : 'text-[#E2E8F0]'
+                          mission.claimed ? 'text-[#94A3B8] line-through' : 'text-[#F2F2ED]'
                         }`}
                       >
                         {mission.title}
@@ -155,16 +155,16 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
                     </div>
 
                     {/* Mission Progress Track */}
-                    <div className="mt-1.5 h-1.5 w-full bg-[#090C11] overflow-hidden">
+                    <div className="mt-1.5 h-1.5 w-full bg-[#0A0D0A] overflow-hidden">
                       <div
                         className="h-full transition-all duration-300"
                         style={{
                           width: `${pct}%`,
                           backgroundColor: mission.claimed
-                            ? '#10B981'
+                            ? '#22C55E'
                             : isReady
-                            ? '#F59E0B'
-                            : '#DC2626',
+                            ? '#C6A65A'
+                            : '#B83232',
                         }}
                       />
                     </div>
@@ -172,13 +172,13 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
                     {/* Rewards + Quick Claim Action */}
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 text-[10px] font-mono-num">
-                        <span className="text-[#F59E0B]">+{mission.rewardGold}G</span>
+                        <span className="text-[#C6A65A]">+{mission.rewardGold} V-C</span>
                         <span className="text-white/20">·</span>
                         <span className="text-[#38BDF8]">+{mission.rewardBpXp} BP</span>
                       </div>
 
                       {mission.claimed ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-display font-bold tracking-wider text-[#10B981] uppercase">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-display font-bold tracking-wider text-[#22C55E] uppercase">
                           <Check className="w-3 h-3" />
                           Claimed
                         </span>
@@ -189,12 +189,12 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
                             audioEngine.playUiClick(true);
                             onClaimMission(mission.id);
                           }}
-                          className="px-2 py-0.5 bg-[#DC2626] hover:bg-[#EF4444] border border-[#F87171]/60 text-[10px] font-display font-bold tracking-wider text-white uppercase transition-colors cursor-pointer"
+                          className="px-2 py-0.5 bg-[#C6A65A] hover:bg-[#D9B86C] text-[10px] font-display font-bold tracking-wider text-[#101410] uppercase transition-colors cursor-pointer"
                         >
                           Claim
                         </button>
                       ) : (
-                        <span className="font-mono-num text-[10px] text-[#64748B]">{pct}%</span>
+                        <span className="font-mono-num text-[10px] text-[#94A3B8]">{pct}%</span>
                       )}
                     </div>
                   </div>
@@ -204,8 +204,8 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
           </div>
 
           {/* Sidebar Footer: Jump to Full Mission Hub */}
-          <div className="px-2.5 py-2 border-t border-white/10 flex items-center justify-between bg-[#0B0E14]/70">
-            <span className="text-[10px] font-mono-num text-[#64748B]">
+          <div className="px-2.5 py-2 border-t border-[#C6A65A]/15 flex items-center justify-between bg-[#0E130E]/85">
+            <span className="text-[10px] font-mono-num text-[#94A3B8]">
               DAILY OPS · {overallPct}%
             </span>
             <button
@@ -214,12 +214,12 @@ export const DailyMissionsSidebar: React.FC<DailyMissionsSidebarProps> = ({
                 audioEngine.playUiClick();
                 onOpenAllMissions();
               }}
-              className="inline-flex items-center gap-1 text-[11px] font-display font-semibold tracking-wider text-[#CBD5E1] hover:text-white uppercase transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] font-display font-semibold tracking-wider text-[#C6A65A] hover:text-[#F2F2ED] uppercase transition-colors cursor-pointer"
             >
-              <Award className="w-3 h-3 text-[#F59E0B]" />
+              <Award className="w-3 h-3" />
               <span>All Missions</span>
               {otherUnclaimedCount > 0 && (
-                <span className="px-1 bg-[#DC2626] text-white font-mono-num text-[9px]">
+                <span className="px-1 bg-[#B83232] text-white font-mono-num text-[9px]">
                   +{otherUnclaimedCount}
                 </span>
               )}

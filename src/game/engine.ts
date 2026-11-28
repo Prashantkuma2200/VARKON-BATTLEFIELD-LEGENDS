@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   computeEffectiveWeaponStats,
   getAttachmentById,
+  getCharmById,
   getMapById,
   getOperatorById,
   getSkinById,
@@ -23,6 +24,7 @@ import { createLobbyPlatformTexture } from './textures';
 import { computePostMatchMmrDelta, evaluateSbmm } from './sbmm';
 import {
   AttachmentSlot,
+  CharacterPoseId,
   ControlSettings,
   FireMode,
   GameModeId,
@@ -194,6 +196,13 @@ export class VexoraEngine {
   private lastDragX = 0;
   private lastDragY = 0;
   private lobbyWeaponPitch = 0.08;
+  private previewOperatorId: string | null = null;
+  private previewWeaponId: string | null = null;
+  private characterPose: CharacterPoseId = 'idle';
+  private armoryZoom = 1.0;
+  private armoryAutoRotate = true;
+  private inspectAnimTimer = 0;
+  private reloadAnimTimer = 0;
 
   // Match state
   private world: BuiltWorld | null = null;
@@ -355,6 +364,7 @@ export class VexoraEngine {
     this.renderer.domElement.style.display = 'block';
     this.renderer.domElement.style.width = '100%';
     this.renderer.domElement.style.height = '100%';
+    this.renderer.domElement.style.touchAction = 'none';
 
     this.scene = new THREE.Scene();
     const w = this.container.clientWidth || window.innerWidth;
@@ -543,8 +553,60 @@ export class VexoraEngine {
     if (mode === 'armory') {
       this.rebuildArmoryWeapon();
     } else {
+      this.inspectAnimTimer = 0;
+      this.reloadAnimTimer = 0;
       this.rebuildLobbySubject();
     }
+  }
+
+  public setPreviewOperator(opId: string | null) {
+    this.previewOperatorId = opId;
+    const activeId = opId || this.profile.selectedOperatorId;
+    const savedPose = this.profile.characterCustomizations?.[activeId]?.pose;
+    this.characterPose = savedPose || 'idle';
+    if (this.mode === 'lobby') {
+      this.rebuildLobbySubject();
+    }
+  }
+
+  public setCharacterPose(pose: CharacterPoseId) {
+    this.characterPose = pose;
+  }
+
+  public setPreviewWeapon(weaponId: string | null) {
+    this.previewWeaponId = weaponId;
+    this.inspectAnimTimer = 0;
+    this.reloadAnimTimer = 0;
+    if (this.mode === 'armory') {
+      this.rebuildArmoryWeapon();
+    }
+  }
+
+  public setArmoryZoom(zoom: number) {
+    this.armoryZoom = Math.max(0.68, Math.min(1.65, zoom));
+  }
+
+  public setArmoryAutoRotate(enabled: boolean) {
+    this.armoryAutoRotate = enabled;
+  }
+
+  public resetArmoryView() {
+    this.lobbyTargetAngle = 0.25;
+    this.lobbyWeaponPitch = 0.08;
+    this.inspectAnimTimer = 0;
+    audioEngine.playUiClick();
+  }
+
+  public triggerWeaponInspect() {
+    this.reloadAnimTimer = 0;
+    this.inspectAnimTimer = 2.4;
+    audioEngine.playUiClick();
+  }
+
+  public triggerWeaponReloadPreview() {
+    this.inspectAnimTimer = 0;
+    this.reloadAnimTimer = 1.55;
+    audioEngine.playReload();
   }
 
   public enterLobby() {
@@ -647,15 +709,30 @@ export class VexoraEngine {
       this.lobbyWeaponPreview = null;
     }
 
-    const op = getOperatorById(this.profile.selectedOperatorId);
+    const op = getOperatorById(this.previewOperatorId || this.profile.selectedOperatorId);
     const weapon = getWeaponById(this.profile.selectedWeaponId);
     const skin = getSkinById(this.profile.selectedWeaponSkins[weapon.id]);
     const atts = this.profile.selectedAttachments[weapon.id] || {};
-    const weaponMesh = buildWeaponModel({ weapon, skin, attachments: atts, anisotropy: this.maxAnisotropy });
+    const charmId = this.profile.selectedWeaponCharms?.[weapon.id];
+    const charm = charmId && charmId !== 'charm_none' ? getCharmById(charmId) : null;
+    const weaponMesh = buildWeaponModel({
+      weapon,
+      skin,
+      attachments: atts,
+      charmColor: charm?.color,
+      charmAccentColor: charm?.accentColor,
+      anisotropy: this.maxAnisotropy,
+    });
+
+    const cust = this.profile.characterCustomizations?.[op.id];
+    if (cust?.pose) {
+      this.characterPose = cust.pose;
+    }
 
     const rig = buildOperatorModel(op, weaponMesh, {
       outfitColor: this.profile.operatorOutfitTint[op.id],
       visorColor: this.profile.operatorVisorTint[op.id],
+      customization: cust,
       anisotropy: this.maxAnisotropy,
     });
     rig.root.position.set(0, 0, 0);
@@ -675,11 +752,26 @@ export class VexoraEngine {
       this.lobbyWeaponPreview = null;
     }
 
-    const weapon = getWeaponById(this.profile.selectedWeaponId);
+    const weapon = getWeaponById(this.previewWeaponId || this.profile.selectedWeaponId);
     const skin = getSkinById(this.profile.selectedWeaponSkins[weapon.id]);
     const atts = this.profile.selectedAttachments[weapon.id] || {};
-    const model = buildWeaponModel({ weapon, skin, attachments: atts, anisotropy: this.maxAnisotropy });
-    model.scale.setScalar(2.65);
+    const charmId = this.profile.selectedWeaponCharms?.[weapon.id];
+    const charm = charmId && charmId !== 'charm_none' ? getCharmById(charmId) : null;
+    const model = buildWeaponModel({
+      weapon,
+      skin,
+      attachments: atts,
+      charmColor: charm?.color,
+      charmAccentColor: charm?.accentColor,
+      anisotropy: this.maxAnisotropy,
+    });
+    const compactScale =
+      weapon.category === 'GRENADE'
+        ? 4.4
+        : weapon.category === 'PISTOL' || weapon.category === 'MELEE'
+        ? 3.35
+        : 2.65;
+    model.scale.setScalar(compactScale);
     model.position.set(0, 1.25, 0);
     model.rotation.y = Math.PI * 0.42;
     this.lobbyGroup.add(model);
@@ -749,14 +841,23 @@ export class VexoraEngine {
     const primaryId = mode === 'sniper' ? 'awmx' : this.profile.selectedWeaponId;
     const secondaryId = mode === 'sniper' ? 'kar98v' : this.profile.selectedSecondaryId;
     const pDef = getWeaponById(primaryId);
-    const sDef = getWeaponById(secondaryId);
     const pAtts = { ...(this.profile.selectedAttachments[primaryId] || {}) };
-    const sAtts = { ...(this.profile.selectedAttachments[secondaryId] || {}) };
     if (mode === 'sniper' && !pAtts.scope) pAtts.scope = 'scope_8x';
-
     const pEff = computeEffectiveWeaponStats(pDef, pAtts, this.profile.weaponLevels[primaryId] || 1);
-    const sEff = computeEffectiveWeaponStats(sDef, sAtts, this.profile.weaponLevels[secondaryId] || 1);
     this.fireMode = pDef.fireModes[0] || 'AUTO';
+
+    let secondarySlot: PlayerLoadoutSlot | null = null;
+    if (secondaryId) {
+      const sDef = getWeaponById(secondaryId);
+      const sAtts = { ...(this.profile.selectedAttachments[secondaryId] || {}) };
+      const sEff = computeEffectiveWeaponStats(sDef, sAtts, this.profile.weaponLevels[secondaryId] || 1);
+      secondarySlot = {
+        weaponId: secondaryId,
+        ammoInMag: sEff.magSize,
+        skinId: this.profile.selectedWeaponSkins[secondaryId] || 'skin_factory',
+        attachments: sAtts,
+      };
+    }
 
     this.slots = [
       {
@@ -765,12 +866,7 @@ export class VexoraEngine {
         skinId: this.profile.selectedWeaponSkins[primaryId] || 'skin_factory',
         attachments: pAtts,
       },
-      {
-        weaponId: secondaryId,
-        ammoInMag: sEff.magSize,
-        skinId: this.profile.selectedWeaponSkins[secondaryId] || 'skin_factory',
-        attachments: sAtts,
-      },
+      secondarySlot,
     ];
     this.activeSlot = 0;
     this.reserveAmmo = {
@@ -862,11 +958,21 @@ export class VexoraEngine {
     if (activeWeaponSlot) {
       const wDef = getWeaponById(activeWeaponSlot.weaponId);
       const skin = getSkinById(activeWeaponSlot.skinId);
-      wMesh = buildWeaponModel({ weapon: wDef, skin, attachments: activeWeaponSlot.attachments, anisotropy: this.maxAnisotropy });
+      const charmId = this.profile.selectedWeaponCharms?.[wDef.id];
+      const charm = charmId && charmId !== 'charm_none' ? getCharmById(charmId) : null;
+      wMesh = buildWeaponModel({
+        weapon: wDef,
+        skin,
+        attachments: activeWeaponSlot.attachments,
+        charmColor: charm?.color,
+        charmAccentColor: charm?.accentColor,
+        anisotropy: this.maxAnisotropy,
+      });
     }
     this.playerRig = buildOperatorModel(op, wMesh, {
       outfitColor: this.profile.operatorOutfitTint[op.id],
       visorColor: this.profile.operatorVisorTint[op.id],
+      customization: this.profile.characterCustomizations?.[op.id],
       anisotropy: this.maxAnisotropy,
     });
     this.playerRig.root.position.set(this.playerX, this.playerY, this.playerZ);
@@ -1581,7 +1687,8 @@ export class VexoraEngine {
       this.lastDragX = e.clientX;
       this.lastDragY = e.clientY;
       this.lobbyTargetAngle += dx * 0.012;
-      this.lobbyWeaponPitch = THREE.MathUtils.clamp(this.lobbyWeaponPitch + dy * 0.008, -0.5, 0.5);
+      const maxPitch = this.mode === 'armory' ? 1.25 : 0.5;
+      this.lobbyWeaponPitch = THREE.MathUtils.clamp(this.lobbyWeaponPitch + dy * 0.009, -maxPitch, maxPitch);
     }
   }
 
@@ -2078,26 +2185,133 @@ export class VexoraEngine {
         this.lobbyTargetAngle += dt * 0.14;
       }
       if (this.lobbyOperatorRig) {
-        this.lobbyOperatorRig.root.rotation.y = this.lobbyTurntableAngle;
-        this.lobbyOperatorRig.torso.position.y = 1.03 + Math.sin(elapsed * 2.1) * 0.014;
-        this.lobbyOperatorRig.head.rotation.y = Math.sin(elapsed * 0.9) * 0.14;
+        const rig = this.lobbyOperatorRig;
+        rig.root.rotation.y = this.lobbyTurntableAngle;
+        rig.torso.position.y = 1.03 + Math.sin(elapsed * 2.1) * 0.014;
+
+        // Smooth articulated emote & victory pose targets
+        let tLeftX = -0.82;
+        let tLeftY = 0.42;
+        let tLeftZ = 0;
+        let tRightX = -0.78;
+        let tRightY = -0.15;
+        let tRightZ = 0;
+        let tHeadY = Math.sin(elapsed * 0.9) * 0.14;
+        let tTorsoY = 0;
+
+        if (this.characterPose === 'salute') {
+          tLeftX = -2.35;
+          tLeftY = 0.35;
+          tLeftZ = -0.35;
+          tRightX = -0.25;
+          tRightY = -0.05;
+          tHeadY = 0.05;
+        } else if (this.characterPose === 'victory') {
+          tLeftX = -2.55 + Math.sin(elapsed * 3.2) * 0.12;
+          tLeftY = 0.1;
+          tLeftZ = -0.45;
+          tRightX = -2.15 + Math.cos(elapsed * 3.2) * 0.12;
+          tRightY = -0.1;
+          tRightZ = 0.35;
+          tTorsoY = Math.sin(elapsed * 2.2) * 0.1;
+        } else if (this.characterPose === 'combat_ready') {
+          tLeftX = -1.25;
+          tLeftY = 0.55;
+          tRightX = -1.32;
+          tRightY = -0.12;
+          tTorsoY = -0.18;
+          tHeadY = 0.18;
+        } else if (this.characterPose === 'tactical_scan') {
+          tLeftX = -1.65;
+          tLeftY = 0.22;
+          tLeftZ = -0.15;
+          tRightX = -0.65;
+          tRightY = -0.15;
+          tHeadY = Math.sin(elapsed * 2.4) * 0.42;
+        }
+
+        rig.leftArm.rotation.x = THREE.MathUtils.damp(rig.leftArm.rotation.x, tLeftX, 7, dt);
+        rig.leftArm.rotation.y = THREE.MathUtils.damp(rig.leftArm.rotation.y, tLeftY, 7, dt);
+        rig.leftArm.rotation.z = THREE.MathUtils.damp(rig.leftArm.rotation.z, tLeftZ, 7, dt);
+        rig.rightArm.rotation.x = THREE.MathUtils.damp(rig.rightArm.rotation.x, tRightX, 7, dt);
+        rig.rightArm.rotation.y = THREE.MathUtils.damp(rig.rightArm.rotation.y, tRightY, 7, dt);
+        rig.rightArm.rotation.z = THREE.MathUtils.damp(rig.rightArm.rotation.z, tRightZ, 7, dt);
+        rig.head.rotation.y = THREE.MathUtils.damp(rig.head.rotation.y, tHeadY, 7, dt);
+        rig.torso.rotation.y = THREE.MathUtils.damp(rig.torso.rotation.y, tTorsoY, 7, dt);
       }
       this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, 0.25, 5, dt);
       this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, 1.5, 5, dt);
       this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, 4.65, 5, dt);
       this.camera.lookAt(0, 1.05, 0);
     } else if (this.mode === 'armory') {
-      if (!this.isLobbyDragging) {
-        this.lobbyTargetAngle += dt * 0.28;
+      if (this.armoryAutoRotate && !this.isLobbyDragging && this.inspectAnimTimer <= 0 && this.reloadAnimTimer <= 0) {
+        this.lobbyTargetAngle += dt * 0.68;
       }
+
       if (this.lobbyWeaponPreview) {
-        this.lobbyWeaponPreview.rotation.y = this.lobbyTurntableAngle + Math.PI * 0.42;
-        this.lobbyWeaponPreview.rotation.x = THREE.MathUtils.damp(this.lobbyWeaponPreview.rotation.x, this.lobbyWeaponPitch, 8, dt);
+        let extraYaw = 0;
+        let extraPitch = 0;
+        let extraRoll = 0;
+
+        if (this.armoryAutoRotate && !this.isLobbyDragging && this.inspectAnimTimer <= 0 && this.reloadAnimTimer <= 0) {
+          // Gentle orbital tilt during 360° showcase so top rail, underside, skin, and receiver charm catch studio light
+          extraPitch = Math.sin(this.lobbyTurntableAngle * 0.5) * 0.14;
+        }
+
+        if (this.inspectAnimTimer > 0) {
+          this.inspectAnimTimer = Math.max(0, this.inspectAnimTimer - dt);
+          const p = 1 - this.inspectAnimTimer / 2.4;
+          const smooth = p * p * (3 - 2 * p);
+          extraYaw = smooth * Math.PI * 2;
+          extraPitch = Math.sin(p * Math.PI * 2) * 0.3;
+          extraRoll = Math.sin(p * Math.PI) * 0.36;
+        }
+
+        if (this.reloadAnimTimer > 0) {
+          this.reloadAnimTimer = Math.max(0, this.reloadAnimTimer - dt);
+          const p = 1 - this.reloadAnimTimer / 1.55;
+          // Tilt receiver during reload + drop and re-seat magazine
+          extraRoll = Math.sin(p * Math.PI) * -0.38;
+          extraPitch = Math.sin(p * Math.PI) * 0.18;
+          const mag = this.lobbyWeaponPreview.getObjectByName('weaponMag');
+          if (mag) {
+            const baseY = typeof mag.userData.baseY === 'number' ? mag.userData.baseY : mag.position.y;
+            const drop = p < 0.45 ? p / 0.45 : p < 0.65 ? 1 : 1 - (p - 0.65) / 0.35;
+            mag.position.y = baseY - Math.max(0, Math.min(1, drop)) * 0.24;
+          }
+        } else {
+          const mag = this.lobbyWeaponPreview.getObjectByName('weaponMag');
+          if (mag && typeof mag.userData.baseY === 'number') {
+            mag.position.y = THREE.MathUtils.damp(mag.position.y, mag.userData.baseY, 12, dt);
+          }
+        }
+
+        const charm = this.lobbyWeaponPreview.getObjectByName('weaponCharm');
+        if (charm) {
+          const spinLag = this.armoryAutoRotate && !this.isLobbyDragging ? 0.12 : 0;
+          charm.rotation.z = Math.sin(elapsed * 3.4) * 0.18 + extraRoll * 0.5 + spinLag;
+        }
+
+        this.lobbyWeaponPreview.rotation.y = this.lobbyTurntableAngle + Math.PI * 0.42 + extraYaw;
+        this.lobbyWeaponPreview.rotation.x = THREE.MathUtils.damp(
+          this.lobbyWeaponPreview.rotation.x,
+          this.lobbyWeaponPitch + extraPitch,
+          8,
+          dt
+        );
+        this.lobbyWeaponPreview.rotation.z = THREE.MathUtils.damp(
+          this.lobbyWeaponPreview.rotation.z,
+          extraRoll,
+          9,
+          dt
+        );
         this.lobbyWeaponPreview.position.y = 1.25 + Math.sin(elapsed * 2.2) * 0.035;
       }
+
+      const targetZ = 3.25 / this.armoryZoom;
       this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, 0, 6, dt);
       this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, 1.38, 6, dt);
-      this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, 3.2, 6, dt);
+      this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, targetZ, 7, dt);
       this.camera.lookAt(0, 1.24, 0);
     }
 

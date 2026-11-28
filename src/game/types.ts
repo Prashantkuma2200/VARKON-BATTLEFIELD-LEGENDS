@@ -4,6 +4,7 @@ export type LobbyModal =
   | null
   | 'armory'
   | 'characters'
+  | 'vehicles'
   | 'inventory'
   | 'store'
   | 'battlepass'
@@ -14,7 +15,10 @@ export type LobbyModal =
   | 'social'
   | 'settings'
   | 'mail'
-  | 'events';
+  | 'events'
+  | 'esports'
+  | 'replays'
+  | 'profile';
 
 export type GameModeId = 'classic' | 'ranked' | 'tdm' | 'arena4v4' | 'sniper' | 'training' | 'custom';
 export type SquadSize = 'solo' | 'duo' | 'squad';
@@ -22,6 +26,9 @@ export type PerspectiveMode = 'TPP' | 'FPP';
 export type MapId = 'aethelgard' | 'sirocco' | 'frostbite' | 'obsidian';
 export type WeatherType = 'clear' | 'fog' | 'rain' | 'storm';
 export type TimeOfDay = 'day' | 'sunset' | 'night';
+export type BotDifficulty = 'beginner' | 'easy' | 'normal' | 'hard' | 'elite';
+
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export type GraphicsPresetId = 'smooth' | 'balanced' | 'hd' | 'ultra' | 'extreme' | 'custom';
 export type QualityLevel = 'low' | 'medium' | 'high' | 'ultra';
@@ -84,7 +91,16 @@ export interface HudLayoutPreset {
   elements: Record<string, HudElementConfig>;
 }
 
-export type WeaponCategory = 'AR' | 'SMG' | 'SNIPER' | 'DMR' | 'SHOTGUN';
+export type WeaponCategory =
+  | 'AR'
+  | 'SMG'
+  | 'SNIPER'
+  | 'DMR'
+  | 'SHOTGUN'
+  | 'LMG'
+  | 'PISTOL'
+  | 'MELEE'
+  | 'GRENADE';
 export type FireMode = 'AUTO' | 'BURST' | 'SINGLE';
 export type AttachmentSlot = 'scope' | 'muzzle' | 'grip' | 'magazine' | 'stock';
 
@@ -108,7 +124,7 @@ export interface WeaponDef {
   name: string;
   code: string;
   category: WeaponCategory;
-  ammoType: '5.56mm' | '7.62mm' | '9mm' | '.300 Mag' | '12 Gauge';
+  ammoType: '5.56mm' | '7.62mm' | '9mm' | '.300 Mag' | '12 Gauge' | 'Steel' | 'Explosive';
   damage: number;
   headshotMult: number;
   fireRate: number;
@@ -124,12 +140,32 @@ export interface WeaponDef {
   bodyColor: string;
   accentColor: string;
   description: string;
+  priceGold?: number;
+}
+
+export interface WeaponCharmDef {
+  id: string;
+  name: string;
+  rarity: ItemRarity;
+  color: string;
+  accentColor: string;
+  description: string;
+}
+
+export interface TacticalGearDef {
+  id: string;
+  name: string;
+  category: 'Medical' | 'Armor' | 'Recon' | 'Supply';
+  rarity: ItemRarity;
+  accentColor: string;
+  description: string;
+  cooldownLabel: string;
 }
 
 export interface WeaponSkinDef {
   id: string;
   name: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: ItemRarity;
   primaryColor: string;
   secondaryColor: string;
   emissiveColor: string;
@@ -140,13 +176,67 @@ export interface WeaponSkinDef {
   killEffect: string;
 }
 
+export type HelmetStyleId = 'ballistic' | 'nvg_tactical' | 'recon_cap' | 'heavy_visor' | 'none';
+export type MaskStyleId = 'half_mask' | 'respirator' | 'balaclava' | 'none';
+export type BackpackStyleId = 'tactical' | 'heavy_pack' | 'recon_sling' | 'none';
+export type HairStyleId = 'tactical_crop' | 'ponytail' | 'undercut' | 'mohawk' | 'buzz';
+export type CharacterPoseId = 'idle' | 'salute' | 'victory' | 'combat_ready' | 'tactical_scan';
+
+export interface CharacterCustomization {
+  faceTone: string;
+  hairStyle: HairStyleId;
+  hairColor: string;
+  helmetStyle: HelmetStyleId;
+  maskStyle: MaskStyleId;
+  glovesBootsColor: string;
+  backpackStyle: BackpackStyleId;
+  outfitColor: string;
+  visorColor: string;
+  skinId: string;
+  pose: CharacterPoseId;
+}
+
+export interface CharacterSkinDef {
+  id: string;
+  name: string;
+  rarity: ItemRarity;
+  outfitColor: string;
+  visorColor: string;
+  glovesBootsColor: string;
+  description: string;
+}
+
 export interface OperatorDef {
   id: string;
   name: string;
   codename: string;
   role: string;
+  className:
+    | 'Stealth'
+    | 'Heavy'
+    | 'Recon'
+    | 'Assault'
+    | 'Sniper'
+    | 'Commander'
+    | 'Infiltration'
+    | 'Tracker'
+    | 'Medic'
+    | 'Scout'
+    | 'Demolition'
+    | 'Defense';
   gender: 'Male' | 'Female';
   level: number;
+  backstory: string;
+  stats: {
+    mobility: number;
+    armor: number;
+    tactics: number;
+    stealth: number;
+  };
+  defaultHelmet: HelmetStyleId;
+  defaultMask: MaskStyleId;
+  defaultBackpack: BackpackStyleId;
+  defaultHairStyle: HairStyleId;
   activeAbility: {
     name: string;
     description: string;
@@ -164,6 +254,19 @@ export interface OperatorDef {
   skinTone: string;
   hairColor: string;
   priceGold: number;
+}
+
+export interface VehicleDef {
+  id: string;
+  name: string;
+  category: 'Light Tactical' | 'Recon' | 'Armored' | 'Heavy' | 'Fast Strike' | 'Air Support';
+  seats: number;
+  maxSpeedKmh: number;
+  armorHp: number;
+  handling: number;
+  status: 'Drivable in 3D Prototype' | 'Simulated Concept (Phase 8)';
+  defaultCamo: string;
+  description: string;
 }
 
 export interface MapDef {
@@ -337,6 +440,15 @@ export interface MatchResultSummary {
   sbmmTierLabel: string;
 }
 
+export interface ReplayEvent {
+  timeSec: number;
+  type: 'elimination' | 'headshot' | 'airdrop' | 'zone' | 'clutch' | 'victory';
+  label: string;
+  detail: string;
+  weapon?: string;
+  distanceM?: number;
+}
+
 export interface MatchHistoryRecord {
   id: string;
   dateLabel: string;
@@ -349,6 +461,8 @@ export interface MatchHistoryRecord {
   headshots: number;
   rpDelta: number;
   victory: boolean;
+  durationSec?: number;
+  events?: ReplayEvent[];
 }
 
 export interface ProgressionMilestone {
@@ -364,6 +478,16 @@ export interface ProgressionMilestone {
   rewardSkinId?: string;
   rewardOutfitColor?: string;
   rewardTitle?: string;
+}
+
+export interface AchievementDef {
+  id: string;
+  title: string;
+  description: string;
+  metric: 'wins' | 'kills' | 'headshots' | 'matches' | 'damage' | 'level';
+  target: number;
+  badgeColor: string;
+  rewardCoins: number;
 }
 
 export interface SbmmAssessment {
@@ -398,7 +522,7 @@ export interface StoreItemDef {
   id: string;
   name: string;
   category: 'outfit' | 'weapon_skin' | 'vehicle_skin' | 'parachute' | 'emote' | 'bundle';
-  rarity: 'rare' | 'epic' | 'legendary';
+  rarity: ItemRarity;
   priceGold: number;
   priceVex: number;
   accentColor: string;
@@ -406,6 +530,45 @@ export interface StoreItemDef {
   description: string;
   weaponSkinId?: string;
   operatorOutfitColor?: string;
+  isDailyDeal?: boolean;
+  discountPct?: number;
+}
+
+export interface TransactionRecord {
+  id: string;
+  itemName: string;
+  currency: 'V-Coins' | 'V-Credits';
+  amount: number;
+  dateLabel: string;
+}
+
+export interface CustomRoomConfig {
+  roomId: string;
+  roomName: string;
+  password: string;
+  mode: GameModeId;
+  mapId: MapId;
+  squadSize: SquadSize;
+  perspective: PerspectiveMode;
+  maxPlayers: number;
+  zoneSpeed: 'Standard' | 'Fast' | 'Tournament';
+  lootRate: 'Standard' | 'High Loot' | 'Esports';
+  friendlyFire: boolean;
+  allowSpectators: boolean;
+  botDifficulty: BotDifficulty;
+}
+
+export interface TournamentDef {
+  id: string;
+  name: string;
+  format: 'Solo Championship' | 'Squad Championship' | 'Clan Tournament' | 'Weekly Cup';
+  mapId: MapId;
+  prizePool: string;
+  schedule: string;
+  status: 'Open' | 'Live' | 'Upcoming';
+  teamsRegistered: number;
+  maxTeams: number;
+  minRank: string;
 }
 
 export interface MailMessage {
@@ -423,6 +586,9 @@ export interface PlayerProfile {
   name: string;
   playerId: string;
   authProvider: 'guest' | 'email' | 'google' | 'apple';
+  email?: string;
+  linkedProviders?: Array<'guest' | 'email' | 'google' | 'apple'>;
+  createdAt?: string;
   equippedTitle: string;
   unlockedTitles: string[];
   level: number;
@@ -440,12 +606,21 @@ export interface PlayerProfile {
   claimedRankRewards: string[];
   weaponLevels: Record<string, number>;
   selectedOperatorId: string;
+  selectedVehicleId?: string;
+  selectedVehicleCamo?: Record<string, string>;
   selectedWeaponId: string;
   selectedSecondaryId: string;
+  selectedPistolId?: string;
+  selectedMeleeId?: string;
+  selectedGrenadeId?: string;
+  selectedTacticalId?: string;
   selectedWeaponSkins: Record<string, string>;
+  selectedWeaponCharms?: Record<string, string>;
   selectedAttachments: Record<string, Partial<Record<AttachmentSlot, string>>>;
   operatorOutfitTint: Record<string, string>;
   operatorVisorTint: Record<string, string>;
+  characterCustomizations?: Record<string, Partial<CharacterCustomization>>;
+  ownedWeaponIds?: string[];
   ownedStoreItems: string[];
   ownedSkinIds: string[];
   ownedOperatorIds: string[];
@@ -459,6 +634,9 @@ export interface PlayerProfile {
   matchHistory: MatchHistoryRecord[];
   missions: MissionDef[];
   mail: MailMessage[];
+  transactions?: TransactionRecord[];
+  registeredTournaments?: string[];
+  savedHighlightIds?: string[];
   dailyRewardDay: number;
   dailyRewardClaimedToday: boolean;
   clanName: string;

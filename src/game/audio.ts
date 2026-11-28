@@ -124,6 +124,18 @@ class TacticalAudioEngine {
       dur = 0.2;
       baseFreq = suppressed ? 1200 : 2200;
       punchFreq = 115;
+    } else if (category === 'LMG') {
+      dur = 0.19;
+      baseFreq = suppressed ? 1150 : 1950;
+      punchFreq = 105;
+    } else if (category === 'PISTOL') {
+      dur = 0.095;
+      baseFreq = suppressed ? 1300 : 2300;
+      punchFreq = 210;
+    } else if (category === 'MELEE') {
+      dur = 0.075;
+      baseFreq = 2600;
+      punchFreq = 280;
     }
 
     filter.frequency.setValueAtTime(baseFreq, now);
